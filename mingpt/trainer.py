@@ -13,6 +13,7 @@ import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data.dataloader import DataLoader
+from mingpt.utils import sample
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class Trainer:
         self.device = 'cpu'
         if torch.cuda.is_available():
             self.device = torch.cuda.current_device()
+            self.urmodel = self.model
             self.model = torch.nn.DataParallel(self.model).to(self.device)
 
     def save_checkpoint(self):
@@ -72,6 +74,18 @@ class Trainer:
             losses = []
             pbar = tqdm(enumerate(loader), total=len(loader)) if is_train else enumerate(loader)
             for it, (x, y) in pbar:
+
+                if it != 0 and it % 100 == 0:
+                    context = "\n"
+                    inp = torch.tensor(
+                        [self.train_dataset.stoi[s] for s in context],
+                        dtype=torch.long
+                    )[None,...].to(self.device)
+                    outp = sample(self.urmodel, inp, 200, temperature=1.0, sample=True, top_k=10)[0]
+                    completion = ''.join([self.train_dataset.itos[int(i)] for i in outp])
+                    print("-"*40)
+                    print(completion)
+                    print("-"*40)
 
                 # place data on the correct device
                 x = x.to(self.device)
