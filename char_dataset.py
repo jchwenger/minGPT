@@ -2,6 +2,7 @@ import json
 import torch
 from torch.utils.data import Dataset
 
+
 class CharDataset(Dataset):
     def __init__(self, data, block_size):
         chars = sorted(list(set(data)))
@@ -60,9 +61,6 @@ class CharDataset(Dataset):
         return x, y
 
     def save(self, mod_name):
-        print("saving stoi and itos to json")
-        with open(mod_name + ".stoi.json", "w") as o:
-            json.dump(self.stoi,o)
-        with open(mod_name + ".itos.json", "w") as o:
-            json.dump(self.itos,o)
-
+        print("saving vocab (stoi) to json")
+        with open(mod_name + "vocab.json", "w") as o:
+            json.dump(self.stoi, o)

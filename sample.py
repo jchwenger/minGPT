@@ -29,10 +29,8 @@ args = parser.parse_args()
 assert os.path.isfile(args.model), f"{args.model} not found"
 mod_config = os.path.splitext(args.model)[0] + ".json"
 assert os.path.isfile(mod_config), f"{mod_config} not found"
-stoi_config = os.path.splitext(args.model)[0] + ".stoi.json"
-assert os.path.isfile(mod_config), f"{stoi_config} not found"
-itos_config = os.path.splitext(args.model)[0] + ".itos.json"
-assert os.path.isfile(mod_config), f"{itos_config} not found"
+vocab_config = os.path.splitext(args.model)[0] + ".vocab.json"
+assert os.path.isfile(mod_config), f"{vocab_config} not found"
 
 with open(mod_config) as i:
     data = json.load(i)
@@ -53,12 +51,9 @@ if torch.cuda.is_available():
 
 model.to(device)
 
-with open(stoi_config) as i:
+with open(vocab_config) as i:
     stoi = json.load(i)
-
-with open(itos_config) as i:
-    itos = json.load(i)
-    itos = {int(k): v for k, v in itos.items()}
+    itos = {int(v): k for k, v in stoi.items()}
 
 # Print model's state_dict
 print("-" * 40)
