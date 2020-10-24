@@ -1,8 +1,38 @@
+import json
 import random
+import logging
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+
+logger = logging.getLogger(__name__)
+
+
+def print_state_dict(model):
+    logger.info("-" * 40)
+    msg = "Model's state_dict:"
+    logger.info(msg)
+    logger.info("-" * len(msg))
+    longest = len(max(model.state_dict().keys(), key=len))
+    for param_tensor in model.state_dict():
+        logger.info(
+            f"{param_tensor:{longest}} {list(model.state_dict()[param_tensor].size())}"
+        )
+    logger.info("-" * 40)
+    logger.info("")
+
+
+def load_json(fname):
+    with open(fname) as i:
+        j = json.load(i)
+    return j
+
+
+def save_json(obj, fname):
+    with open(fname, "w") as o:
+        json.dump(obj, o)
+
 
 def set_seed(seed):
     random.seed(seed)
@@ -10,11 +40,13 @@ def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
+
 def top_k_logits(logits, k):
     v, ix = torch.topk(logits, k)
     out = logits.clone()
-    out[out < v[:, [-1]]] = -float('Inf')
+    out[out < v[:, [-1]]] = -float("Inf")
     return out
+
 
 @torch.no_grad()
 def sample(model, x, steps, temperature=1.0, sample=False, top_k=None):
@@ -27,7 +59,9 @@ def sample(model, x, steps, temperature=1.0, sample=False, top_k=None):
     block_size = model.get_block_size()
     model.eval()
     for k in range(steps):
-        x_cond = x if x.size(1) <= block_size else x[:, -block_size:] # crop context if needed
+        x_cond = (
+            x if x.size(1) <= block_size else x[:, -block_size:]
+        )  # crop context if needed
         logits, _ = model(x_cond)
         # pluck the logits at the final step and scale by temperature
         logits = logits[:, -1, :] / temperature
