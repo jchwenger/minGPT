@@ -1,13 +1,17 @@
 import json
 import torch
+import logging
+
 from torch.utils.data import Dataset
+
+logger = logging.getLogger(__name__)
 
 
 class CharDataset(Dataset):
     def __init__(self, data, block_size):
         chars = sorted(list(set(data)))
         data_size, vocab_size = len(data), len(chars)
-        print("data has %d characters, %d unique." % (data_size, vocab_size))
+        logger.info(f"data has {data_size} characters, {vocab_size} unique.")
 
         self.stoi = {ch: i for i, ch in enumerate(chars)}
         self.itos = {i: ch for i, ch in enumerate(chars)}
@@ -30,10 +34,10 @@ class CharDataset(Dataset):
         individual predictions at the same time based on this data,
         so we are being clever and amortizing the cost of the forward
         pass of the network. So for example if block_size is 4, then
-    we could e.g. sample a chunk of text "hello", the integers in
-    x will correspond to "hell" and in y will be "ello". This will
-    then actually "multitask" 4 separate examples at the same time
-    in the language model:
+        we could e.g. sample a chunk of text "hello", the integers in
+        x will correspond to "hell" and in y will be "ello". This will
+        then actually "multitask" 4 separate examples at the same time
+        in the language model:
         - given just "h", please predict "e" as next
         - given "he" please predict "l" next
         - given "hel" predict "l" next
