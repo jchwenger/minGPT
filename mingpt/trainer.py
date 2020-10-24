@@ -13,9 +13,11 @@ import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data.dataloader import DataLoader
+from mingpt.utils import save_json
 from mingpt.utils import sample
 
 logger = logging.getLogger(__name__)
+
 
 class TrainerConfig:
     # optimization parameters
@@ -24,21 +26,30 @@ class TrainerConfig:
     learning_rate = 3e-4
     betas = (0.9, 0.95)
     grad_norm_clip = 1.0
-    weight_decay = 0.1 # only applied on matmul weights
+    weight_decay = 0.1  # only applied on matmul weights
     # learning rate decay params: linear warmup followed by cosine decay to 10% of original
     lr_decay = False
-    warmup_tokens = 375e6 # these two numbers come from the GPT-3 paper, but may not be good defaults elsewhere
-    final_tokens = 260e9 # (at what point we reach 10% of original LR)
+    warmup_tokens = 375e6  # these two numbers come from the GPT-3 paper, but may not be good defaults elsewhere
+    final_tokens = 260e9  # (at what point we reach 10% of original LR)
     # checkpoint settings
     ckpt_path = None
-    num_workers = 0 # for DataLoader
+    num_workers = 0  # for DataLoader
 
     def __init__(self, **kwargs):
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             setattr(self, k, v)
 
-class Trainer:
+    # https://stackoverflow.com/questions/61517/python-dictionary-from-an-objects-fields
+    # https://stackoverflow.com/a/21945171
+    def as_dict(self):
+        return {
+            attr: getattr(self, attr)
+            for attr in dir(self)
+            if attr[:2] + attr[-2:] != "____" and not callable(getattr(self, attr))
+        }
 
+
+class Trainer:
     def __init__(self, model, train_dataset, test_dataset, config):
         self.model = model
         self.train_dataset = train_dataset
