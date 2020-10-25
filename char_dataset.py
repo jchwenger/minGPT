@@ -6,6 +6,28 @@ from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
 
+class BytesDataset(Dataset):
+    def __init__(self, data, block_size):
+        self.data = data
+        self.bytes = [b for b in data.encode("utf-8")]
+        self.block_size = block_size
+        self.vocab_size = 256
+        self.stoi = { "bytes": True } # for saving purposes
+
+    def encode(self, text):
+        return [b for b in text.encode("utf-8")]
+
+    def decode(self, data, errors="strict"):
+        return bytes(data).decode(errors=errors)
+
+    def __len__(self):
+        return len(self.bytes) - self.block_size
+
+    def __getitem__(self, idx):
+        chunk = self.bytes[idx : idx + self.block_size + 1]
+        x = torch.tensor(chunk[:-1], dtype=torch.long)
+        y = torch.tensor(chunk[1:], dtype=torch.long)
+        return x, y
 
 class CharDataset(Dataset):
     def __init__(self, data, block_size):
