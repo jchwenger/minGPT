@@ -36,7 +36,11 @@ class GPTConfig:
 
     def save(self, mod_name):
         with open(mod_name + ".json", "w") as o:
-            json.dump({k: v for k, v in self.__dict__.items() if k[0] != "_"}, o)
+            json.dump({
+                attr: getattr(self, attr)
+                for attr in dir(self)
+                if attr[:2] + attr[-2:] != "____" and not callable(getattr(self, attr))
+            }, o)
 
     def load(self, mod_name):
         fname = mod_name + ".json"
