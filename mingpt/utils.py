@@ -1,12 +1,57 @@
+import os
 import json
 import random
 import logging
 import numpy as np
+
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
 logger = logging.getLogger(__name__)
+
+
+def check_name(name):
+    if name.endswith(".pt"):
+        model_name = os.path.splitext(name)[0]
+        model_path = name
+    else:
+        model_name = name
+        model_path = model_name + ".pt"
+    return model_path, model_name
+
+
+def check_file(fname):
+    if os.path.isfile(fname):
+        return True
+    else:
+        logger.info(f"could not find: {fname}")
+        return False
+
+
+def check_model(name):
+    found = True
+    if not all(
+        [
+            check_file(name + ".pt"),
+            check_file(name + ".vocab.json"),
+            check_file(name + ".json"),
+            check_file(name + ".train.json"),
+        ]
+    ):
+        found = False
+    return found
+
+
+def pretty_log_dict(le_dict, title=None):
+    logger.info("-" * 40)
+    if title is not None:
+        logger.info(title)
+        logger.info("-" * len(title))
+    longest = len(max(le_dict.keys(), key=len))
+    [logger.info(f"{k:{longest}}: {v}") for k, v in le_dict.items()]
+    logger.info("-" * 40)
+    logger.info("")
 
 
 def print_state_dict(model):
