@@ -52,6 +52,11 @@ class TrainerConfig:
 class Trainer:
     def __init__(self, model, train_dataset, test_dataset, config, opt=None):
         self.model = model
+        self.dataset = (
+            train_dataset.dataset
+            if hasattr(train_dataset, "dataset")
+            else train_dataset
+        )
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
         self.config = config
@@ -74,7 +79,7 @@ class Trainer:
         # DataParallel wrappers keep raw model object in .module attribute
         logger.info("saving %s", self.config.ckpt_path)
         self.urmodel.save(self.config.ckpt_path)
-        save_json(self.train_dataset.stoi, self.config.ckpt_path + ".vocab.json")
+        save_json(self.dataset.stoi, self.config.ckpt_path + ".vocab.json")
         save_json(self.config.as_dict(), self.config.ckpt_path + ".train.json")
         torch.save(
             {
