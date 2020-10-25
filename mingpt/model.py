@@ -170,6 +170,8 @@ class GPT(nn.Module):
     def __init__(self, config):
         super().__init__()
 
+        self.config = config
+
         # input embedding stem
         self.tok_emb = nn.Embedding(config.vocab_size, config.n_embd)
         self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size, config.n_embd))
@@ -186,6 +188,9 @@ class GPT(nn.Module):
         logger.info(
             "number of parameters: %e", sum(p.numel() for p in self.parameters())
         )
+
+    def save(self, mod_name):
+        self.config.save(mod_name)
 
     def get_block_size(self):
         return self.block_size
