@@ -39,9 +39,7 @@ args = parser.parse_args()
 
 args.model, model_name = check_name(args.model)
 
-data = load_json(model_name + ".json")
-
-model = GPT(GPTConfig(**data))
+model = GPT(GPTConfig(**load_json(f"{model_name}.json")))
 
 model.load_state_dict(torch.load(args.model)["model_state_dict"])
 
