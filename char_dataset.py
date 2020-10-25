@@ -19,6 +19,12 @@ class CharDataset(Dataset):
         self.vocab_size = vocab_size
         self.data = data
 
+    def encode(self, text):
+        return [self.stoi[s] for s in text]
+
+    def decode(self, data):
+        return [self.itos[d] for d in data]
+
     def __len__(self):
         return len(self.data) - self.block_size
 
@@ -63,8 +69,3 @@ class CharDataset(Dataset):
         x = torch.tensor(dix[:-1], dtype=torch.long)
         y = torch.tensor(dix[1:], dtype=torch.long)
         return x, y
-
-    def save(self, mod_name):
-        print("saving vocab (stoi) to json")
-        with open(mod_name + "vocab.json", "w") as o:
-            json.dump(self.stoi, o)
