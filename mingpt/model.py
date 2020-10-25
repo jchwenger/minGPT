@@ -45,6 +45,38 @@ class GPT1Config(GPTConfig):
     n_embd = 768
 
 
+class GPT2MediumConfig(GPTConfig):
+    """ GPT-2 like network roughly 355M params """
+
+    n_layer = 24
+    n_head = 16
+    n_embd = 1024
+
+
+class GPT2LargeConfig(GPTConfig):
+    """ GPT-2 like network roughly 774M params """
+
+    n_layer = 36
+    n_head = 20
+    n_embd = 1280
+
+
+class GPT2Config(GPTConfig):
+    """ GPT-2 like network roughly 1558M params """
+
+    n_layer = 48
+    n_head = 25
+    n_embd = 1600
+
+
+class MinConfig(GPTConfig):
+    """ A tiny network for testing."""
+
+    n_layer = 4
+    n_head = 4
+    n_embd = 128
+
+
 class CausalSelfAttention(nn.Module):
     """
     A vanilla multi-head masked self-attention layer with a projection at the end.
