@@ -7,6 +7,7 @@ GPT model:
 - the final decoder is a linear projection into a vanilla Softmax classifier
 """
 
+import os
 import json
 import math
 import logging
@@ -14,6 +15,8 @@ import logging
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+
+from mingpt.utils import load_json
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +35,15 @@ class GPTConfig:
             setattr(self, k, v)
 
     def save(self, mod_name):
-        print(f"saving {mod_name} config as json")
         with open(mod_name + ".json", "w") as o:
             json.dump({k: v for k, v in self.__dict__.items() if k[0] != "_"}, o)
+
+    def load(self, mod_name):
+        fname = mod_name + ".json"
+        assert os.path.isfile(fname), f"cannot load {fname}, exiting"
+        d = load_json(fname)
+        for k, v in d.items():
+            setattr(self, k, v)
 
 
 class GPT1Config(GPTConfig):
