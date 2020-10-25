@@ -14,10 +14,12 @@ class BytesDataset(Dataset):
         self.vocab_size = 256
         self.stoi = { "bytes": True } # for saving purposes
 
-    def encode(self, text):
+    @staticmethod
+    def encode(text):
         return [b for b in text.encode("utf-8")]
 
-    def decode(self, data, errors="strict"):
+    @staticmethod
+    def decode(data, errors="strict"):
         return bytes(data).decode(errors=errors)
 
     def __len__(self):
