@@ -113,6 +113,20 @@ def make_dataset(fname):
         return CharDataset(text, args.block_size)
 
 
+def split_dataset(dataset, divisor=100, seed=42):
+    ds_len = len(dataset)
+    test_len = ds_len // divisor
+    test, train = torch.utils.data.random_split(
+        dataset,
+        [test_len, ds_len - test_len],
+        generator=torch.Generator().manual_seed(seed),
+    )
+    return {
+        "test_dataset": test,
+        "train_dataset": train,
+    }
+
+
 def restore_model(model_name):
     mconf = GPTConfig()
     mconf.load(model_name)
@@ -127,12 +141,15 @@ def restore_model(model_name):
     return {
         "model": model,
         "config": tconf,
-        "opt": ckpt["optimizer_state_dict"],
+        "opt": ckpt["optimizer_state_dict"] if "optimizer_state_dict" in ckpt else None,
     }
 
-def create_model(model_name):
+
+def create_model(model_name, dataset):
     # default to a tiny network if nothing specified
     mconf = MinConfig()
+
+    mconf.block_size = args.block_size
 
     if args.n_layer is not None:
         mconf.n_layer = args.n_layer
@@ -140,6 +157,8 @@ def create_model(model_name):
         mconf.n_head = args.n_head
     if args.n_embd is not None:
         mconf.n_embd = args.n_embd
+
+    mconf.vocab_size = dataset.vocab_size
 
     model = GPT(mconf)
 
@@ -151,7 +170,7 @@ def create_model(model_name):
         lr_decay=True,
         ckpt_path=model_name,
         warmup_tokens=args.batch_size * 20,
-        final_tokens=2 * len(train_dataset) * args.block_size,
+        final_tokens=2 * len(dataset) * args.block_size,
         num_workers=4,
     )
 
@@ -166,39 +185,39 @@ def create_model(model_name):
 
 
 if args.model is not None:
+    # name given
     args.model, model_name = check_name(args.model)
+    # continue training
     if check_model(model_name):
         logger.info(f"found model: {args.model}, restoring.")
-
         trainer = Trainer(
             **{
-                "train_dataset": make_dataset(args.input),
-                "test_dataset": None,
+                **split_dataset(make_dataset(args.input)),
                 **restore_model(model_name),
             }
         )
-
+    # new model with said name
     else:
-        logger.info(f"model: {args.model} not found, creating a new one with this name.")
+        logger.info(
+            f"model: {args.model} not found, creating a new one with this name."
+        )
 
         train_dataset = make_dataset(args.input)
         trainer = Trainer(
             **{
-                "train_dataset": make_dataset(args.input),
-                "test_dataset": None,
-                **create_model("le_model"),
+                **split_dataset(train_dataset),
+                **create_model("le_model", train_dataset),
             }
         )
-
+# default new model
 else:
     args.model = "le_model.pt"
     logging.info("no model specified, training 'le_model'")
     train_dataset = make_dataset(args.input)
     trainer = Trainer(
         **{
-            "train_dataset": make_dataset(args.input),
-            "test_dataset": None,
-            **create_model("le_model"),
+            **split_dataset(train_dataset),
+            **create_model("le_model", train_dataset),
         }
     )
 
