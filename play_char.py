@@ -91,7 +91,17 @@ parser.add_argument(
     "--sample_every",
     default=0,
     type=int,
-    help="--print a sample every N steps, default: 0 (disabled)",
+    help="print a sample every N steps, default: 0 (disabled)",
+)
+
+parser.add_argument(
+    "--train_test_split",
+    "--test_train_split",
+    default=100,
+    type=int,
+    help="""The divisor used to split the dataset. Defaults to 100, which
+    means a test set randomly sampled to amount to a 100th the size of the
+    total dataset: `test_len = dataset_len // divisor, train = remainder`""",
 )
 
 args = parser.parse_args()
@@ -192,7 +202,9 @@ if args.model is not None:
         logger.info(f"found model: {args.model}, restoring.")
         trainer = Trainer(
             **{
-                **split_dataset(make_dataset(args.input)),
+                **split_dataset(
+                    make_dataset(args.input), divisor=args.train_test_split
+                ),
                 **restore_model(model_name),
             }
         )
@@ -205,7 +217,7 @@ if args.model is not None:
         train_dataset = make_dataset(args.input)
         trainer = Trainer(
             **{
-                **split_dataset(train_dataset),
+                **split_dataset(train_dataset, divisor=args.train_test_split),
                 **create_model(args.model, train_dataset),
             }
         )
@@ -216,7 +228,7 @@ else:
     train_dataset = make_dataset(args.input)
     trainer = Trainer(
         **{
-            **split_dataset(train_dataset),
+            **split_dataset(train_dataset, divisor=args.train_test_split),
             **create_model("le_model", train_dataset),
         }
     )
