@@ -206,7 +206,7 @@ if args.model is not None:
         trainer = Trainer(
             **{
                 **split_dataset(train_dataset),
-                **create_model("le_model", train_dataset),
+                **create_model(args.model, train_dataset),
             }
         )
 # default new model
