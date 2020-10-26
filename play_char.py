@@ -32,11 +32,15 @@ from mingpt.utils import set_seed
 from mingpt.utils import load_json
 from mingpt.utils import check_name
 from mingpt.utils import check_model
-from mingpt.utils import pretty_log_dict
-from mingpt.utils import print_state_dict
 
 # make deterministic
 set_seed(42)
+
+logging.basicConfig(
+    format="%(levelname)s: %(asctime)s %(name)s | %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -135,14 +139,6 @@ parser.add_argument(
     total dataset: `test_len = dataset_len // divisor, train = remainder`""",
 )
 
-args = parser.parse_args()
-
-logging.basicConfig(
-    format="%(levelname)s: %(asctime)s %(name)s | %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO,
-)
-
 
 def make_dataset(fname):
     with open(fname, "r") as i:
@@ -177,8 +173,9 @@ def restore_model(model_name):
     tconf = TrainerConfig(**load_json(f"{model_name }.train.json"))
     if args.batch_size is not None:
         tconf.batch_size = args.batch_size
-    pretty_log_dict(tconf.as_dict(), title="Training config:")
-    print_state_dict(model)
+    mconf.log()
+    tconf.log()
+    model.log()
     return {
         "model": model,
         "config": tconf,
@@ -211,8 +208,6 @@ def create_model(model_name, dataset):
 
     mconf.vocab_size = dataset.vocab_size
 
-    mconf.log()
-
     model = GPT(mconf)
 
     # initialize a trainer instance and kick off training
@@ -227,8 +222,9 @@ def create_model(model_name, dataset):
         num_workers=4,
     )
 
-    pretty_log_dict(tconf.as_dict(), title="Training config:")
-    print_state_dict(model)
+    mconf.log()
+    tconf.log()
+    model.log()
 
     return {
         "model": model,
@@ -237,48 +233,52 @@ def create_model(model_name, dataset):
     }
 
 
-if args.model is not None:
-    # name given
-    args.model, model_name = check_name(args.model)
-    # continue training
-    if check_model(model_name):
-        logger.info(f"found model: {args.model}, restoring.")
-        trainer = Trainer(
-            **{
-                **split_dataset(
-                    make_dataset(args.input), divisor=args.train_test_split
-                ),
-                **restore_model(model_name),
-            }
-        )
-    # new model with said name
-    else:
-        logger.info(
-            f"model: {args.model} not found, creating a new one with this name."
-        )
+if __name__ == "__main__":
 
+    args = parser.parse_args()
+
+    if args.model is not None:
+        # name given
+        args.model, model_name = check_name(args.model)
+        # continue training
+        if check_model(model_name):
+            logger.info(f"found model: {args.model}, restoring.")
+            trainer = Trainer(
+                **{
+                    **split_dataset(
+                        make_dataset(args.input), divisor=args.train_test_split
+                    ),
+                    **restore_model(model_name),
+                }
+            )
+        # new model with said name
+        else:
+            logger.info(
+                f"model: {args.model} not found, creating a new one with this name."
+            )
+
+            train_dataset = make_dataset(args.input)
+            trainer = Trainer(
+                **{
+                    **split_dataset(train_dataset, divisor=args.train_test_split),
+                    **create_model(args.model, train_dataset),
+                }
+            )
+    # default new model
+    else:
+        args.model = "le_model.pt"
+        logging.info("no model specified, training 'le_model'")
         train_dataset = make_dataset(args.input)
         trainer = Trainer(
             **{
                 **split_dataset(train_dataset, divisor=args.train_test_split),
-                **create_model(args.model, train_dataset),
+                **create_model("le_model", train_dataset),
             }
         )
-# default new model
-else:
-    args.model = "le_model.pt"
-    logging.info("no model specified, training 'le_model'")
-    train_dataset = make_dataset(args.input)
-    trainer = Trainer(
-        **{
-            **split_dataset(train_dataset, divisor=args.train_test_split),
-            **create_model("le_model", train_dataset),
-        }
-    )
 
-try:
-    logger.info("training")
-    trainer.train(sample_every=args.sample_every)
-except KeyboardInterrupt:
-    logger.info("saving model, vocab, optimizer")
-    trainer.save_checkpoint()
+    try:
+        logger.info("training")
+        trainer.train(sample_every=args.sample_every)
+    except KeyboardInterrupt:
+        logger.info("saving model, vocab, optimizer")
+        trainer.save_checkpoint()
