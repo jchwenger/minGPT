@@ -35,6 +35,8 @@ class GPTConfig(Loggable):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+    # https://stackoverflow.com/questions/61517/python-dictionary-from-an-objects-fields
+    # https://stackoverflow.com/a/21945171
     def save(self, mod_name):
         with open(mod_name + ".json", "w") as o:
             json.dump(
@@ -127,15 +129,12 @@ class CausalSelfAttention(nn.Module):
         B, T, C = x.size()
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        k = (
-            self.key(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
-        )  # (B, nh, T, hs)
-        q = (
-            self.query(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
-        )  # (B, nh, T, hs)
-        v = (
-            self.value(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
-        )  # (B, nh, T, hs)
+        # (B, nh, T, hs)
+        k = self.key(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
+        # (B, nh, T, hs)
+        q = self.query(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
+        # (B, nh, T, hs)
+        v = self.value(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
 
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
@@ -143,9 +142,8 @@ class CausalSelfAttention(nn.Module):
         att = F.softmax(att, dim=-1)
         att = self.attn_drop(att)
         y = att @ v  # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-        y = (
-            y.transpose(1, 2).contiguous().view(B, T, C)
-        )  # re-assemble all head outputs side by side
+        # re-assemble all head outputs side by side
+        y = y.transpose(1, 2).contiguous().view(B, T, C)
 
         # output projection
         y = self.resid_drop(self.proj(y))
@@ -195,7 +193,7 @@ class GPT(nn.Module):
         self.apply(self._init_weights)
 
         logger.info(
-            "number of parameters: %e", sum(p.numel() for p in self.parameters())
+            f"number of parameters: {sum(p.numel() for p in self.parameters())}"
         )
 
     def save(self, mod_name):
@@ -239,7 +237,7 @@ class GPT(nn.Module):
         blacklist_weight_modules = (torch.nn.LayerNorm, torch.nn.Embedding)
         for mn, m in self.named_modules():
             for pn, p in m.named_parameters():
-                fpn = "%s.%s" % (mn, pn) if mn else pn  # full param name
+                fpn = f"{mn}.{pn}" if mn else pn  # full param name
 
                 if pn.endswith("bias"):
                     # all biases will not be decayed
@@ -260,11 +258,10 @@ class GPT(nn.Module):
         union_params = decay | no_decay
         assert (
             len(inter_params) == 0
-        ), "parameters %s made it into both decay/no_decay sets!" % (str(inter_params),)
-        assert len(param_dict.keys() - union_params) == 0, (
-            "parameters %s were not separated into either decay/no_decay set!"
-            % (str(param_dict.keys() - union_params),)
-        )
+        ), f"parameters {inter_params} made it into both decay/no_decay sets!"
+        assert (
+            len(param_dict.keys() - union_params) == 0
+        ), f"parameters {param_dict.keys() - union_params} were not separated into either decay/no_decay set!"
 
         # create the pytorch optimizer object
         optim_groups = [
@@ -288,9 +285,8 @@ class GPT(nn.Module):
 
         # forward the GPT model
         token_embeddings = self.tok_emb(idx)  # each index maps to a (learnable) vector
-        position_embeddings = self.pos_emb[
-            :, :t, :
-        ]  # each position maps to a (learnable) vector
+        # each position maps to a (learnable) vector
+        position_embeddings = self.pos_emb[:, :t, :]
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
