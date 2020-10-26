@@ -112,17 +112,13 @@ class Trainer:
             )
             for it, (x, y) in pbar:
 
+                # get global step from optimizer
                 # https://discuss.pytorch.org/t/current-step-from-optimizer/19370/3
-                if (
-                    "step"
-                    in self.optimizer.state[
-                        self.optimizer.param_groups[0]["params"][-1]
-                    ]
-                ):
+                try:
                     step = self.optimizer.state[
                         self.optimizer.param_groups[0]["params"][-1]
                     ]["step"]
-                else:
+                except:
                     step = 0
 
                 if sample_every > 0 and step != 0 and step % sample_every == 0:
@@ -131,18 +127,12 @@ class Trainer:
                     inp = torch.tensor(
                         self.train_dataset.encode(context), dtype=torch.long
                     )[None, ...].to(self.device)
-                    # inp = torch.tensor(
-                    #     [self.train_dataset.stoi[s] for s in context], dtype=torch.long
-                    # )[None, ...].to(self.device)
 
                     outp = sample(
                         self.urmodel, inp, 200, temperature=1.0, sample=True, top_k=10
                     )[0]
 
                     completion = self.train_dataset.decode(outp, errors="replace")
-                    # completion = "".join(
-                    #     [self.train_dataset.itos[int(i)] for i in outp]
-                    # )
 
                     print("-" * 40)
                     print(completion)
@@ -171,9 +161,8 @@ class Trainer:
 
                     # decay the learning rate based on our progress
                     if config.lr_decay:
-                        self.tokens += (
-                            y >= 0
-                        ).sum()  # number of tokens processed this step (i.e. label is not -100)
+                        # number of tokens processed this step (i.e. label is not -100)
+                        self.tokens += (y >= 0).sum()
                         if self.tokens < config.warmup_tokens:
                             # linear warmup
                             lr_mult = float(self.tokens) / float(
@@ -197,7 +186,7 @@ class Trainer:
 
                     # report progress
                     pbar.set_description(
-                        f"epoch {epoch+1} iter {step}: train loss {loss.item():.5f}. lr {lr:e}"
+                        f"epoch {epoch+1} step {step}: train loss {loss.item():.5f}. lr {lr:e}"
                     )
 
             if not is_train:
