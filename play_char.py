@@ -88,6 +88,14 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--max_epochs",
+    default=1,
+    type=int,
+    help="""Stops training after this number of epochs (going thru the entire
+    dataset). Defaults to 1.""",
+)
+
+parser.add_argument(
     "--sample_every",
     default=0,
     type=int,
@@ -174,7 +182,7 @@ def create_model(model_name, dataset):
 
     # initialize a trainer instance and kick off training
     tconf = TrainerConfig(
-        max_epochs=1,
+        max_epochs=args.max_epochs,
         batch_size=args.batch_size if args.batch_size is not None else 10,
         learning_rate=6e-4,
         lr_decay=True,
