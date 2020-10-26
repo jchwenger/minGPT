@@ -54,7 +54,7 @@ class GPTConfig:
         for k, v in d.items():
             setattr(self, k, v)
 
-    def __str__(self):
+    def log(self):
         pretty_log_dict(
             {
                 attr: getattr(self, attr)

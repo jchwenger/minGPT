@@ -51,7 +51,6 @@ def pretty_log_dict(le_dict, title=None):
     longest = len(max(le_dict.keys(), key=len))
     [logger.info(f"{k:{longest}}: {v}") for k, v in le_dict.items()]
     logger.info("-" * 40)
-    logger.info("")
 
 
 def print_state_dict(model):
@@ -65,7 +64,6 @@ def print_state_dict(model):
             f"{param_tensor:{longest}} {list(model.state_dict()[param_tensor].size())}"
         )
     logger.info("-" * 40)
-    logger.info("")
 
 
 def load_json(fname):
