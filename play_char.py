@@ -19,6 +19,10 @@ from mingpt.trainer import TrainerConfig
 from mingpt.model import GPT
 from mingpt.model import GPTConfig
 from mingpt.model import MinConfig
+from mingpt.model import GPT1Config
+from mingpt.model import GPT2MediumConfig
+from mingpt.model import GPT2LargeConfig
+from mingpt.model import GPT2Config
 
 from char_dataset import BytesDataset
 from char_dataset import CharDataset
@@ -48,6 +52,24 @@ parser.add_argument(
     type=str,
     default=None,
     help="""the path to the model (the dir should include the model.vocab.json & model.json.""",
+)
+
+parser.add_argument(
+    "--config",
+    type=str,
+    default="min",
+    choices=["min", "small", "medium", "large", "xl"],
+    help="""When creating a new model, default config (architecture size) to
+    use. If None (the defaults), falls back on a minimal net (4 layers, 4
+    heads, 128 embed dims).
+    Choices (layers, heads, embed):
+        - 'small' (12, 12, 768, GPT-1, 117M);
+        - 'medium' (24, 16, 1024, 355M);
+        - 'large' (36, 20, 1280, 774M);
+        - 'xl' (48, 25, 1600, GPT-2).
+    This is set before the other cli arguments are applied, hence can serve as
+    a tweakable basis.
+    """,
 )
 
 parser.add_argument(
@@ -164,8 +186,18 @@ def restore_model(model_name):
 
 
 def create_model(model_name, dataset):
+
     # default to a tiny network if nothing specified
-    mconf = MinConfig()
+    if args.config == "min":
+        mconf = MinConfig()
+    if args.config == "small":
+        mconf = GPT1Config()
+    if args.config == "medium":
+        mconf = GPT2MediumConfig()
+    if args.config == "large":
+        mconf = GPT2LargeConfig()
+    if args.config == "xl":
+        mconf = GPT2Config()
 
     mconf.block_size = args.block_size
 
