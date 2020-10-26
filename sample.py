@@ -8,11 +8,16 @@ import argparse
 from mingpt.utils import sample
 from mingpt.utils import load_json
 from mingpt.utils import check_name
-from mingpt.utils import print_state_dict
 
 from mingpt.model import GPT, GPTConfig
 
 from char_dataset import BytesDataset
+
+logging.basicConfig(
+    format="%(levelname)s: %(asctime)s %(name)s | %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +44,12 @@ args = parser.parse_args()
 
 args.model, model_name = check_name(args.model)
 
-model = GPT(GPTConfig(**load_json(f"{model_name}.json")))
-
+mconf = GPTConfig(**load_json(f"{model_name}.json"))
+model = GPT(mconf)
 model.load_state_dict(torch.load(args.model)["model_state_dict"])
+
+mconf.log()
+# model.log()
 
 device = "cpu"
 if torch.cuda.is_available():
@@ -54,9 +62,7 @@ bytes_level = True if len(stoi) == 1 and "bytes" in stoi else False
 if not bytes_level:
     itos = {int(v): k for k, v in stoi.items()}
 
-print_state_dict(model)
-
-logger.info("inferring on device:", device)
+logger.info(f"inferring on device: {device}", )
 
 context = "o god, o god!" if args.context is None else args.context
 
