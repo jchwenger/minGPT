@@ -5,6 +5,7 @@
 # The inputs here are simple text files, which we chop up to individual characters and then train GPT on. So you could say this is a char-transformer instead of a char-rnn. Doesn't quite roll off the tongue as well. In this example we will feed it some Shakespeare, which we'll get it to predict character-level.
 
 import os
+import sys
 import logging
 import argparse
 import numpy as np
@@ -209,6 +210,8 @@ def create_model(model_name, dataset):
         mconf.n_embd = args.n_embd
 
     mconf.vocab_size = dataset.vocab_size
+
+    mconf.log()
 
     model = GPT(mconf)
 
