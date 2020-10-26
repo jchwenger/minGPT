@@ -10,6 +10,30 @@ from torch.nn import functional as F
 
 logger = logging.getLogger(__name__)
 
+class Loggable:
+
+    def __init__(self):
+        pass
+
+    # https://stackoverflow.com/questions/61517/python-dictionary-from-an-objects-fields
+    # https://stackoverflow.com/a/21945171
+    def as_dict(self):
+        return {
+            attr: getattr(self, attr)
+            for attr in dir(self)
+            if attr[:2] + attr[-2:] != "____" and not callable(getattr(self, attr))
+        }
+
+    def log(self, title=None):
+        pretty_log_dict(
+            {
+                attr: getattr(self, attr)
+                for attr in dir(self)
+                if attr[:2] + attr[-2:] != "____" and not callable(getattr(self, attr))
+            },
+            title=f"{self.__class__.__name__}:",
+        )
+
 
 def check_name(name):
     if name.endswith(".pt"):
