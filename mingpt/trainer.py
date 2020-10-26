@@ -13,13 +13,15 @@ import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data.dataloader import DataLoader
-from mingpt.utils import save_json
+
 from mingpt.utils import sample
+from mingpt.utils import Loggable
+from mingpt.utils import save_json
 
 logger = logging.getLogger(__name__)
 
 
-class TrainerConfig:
+class TrainerConfig(Loggable):
     # optimization parameters
     max_epochs = 10
     batch_size = 64
@@ -38,15 +40,6 @@ class TrainerConfig:
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
-
-    # https://stackoverflow.com/questions/61517/python-dictionary-from-an-objects-fields
-    # https://stackoverflow.com/a/21945171
-    def as_dict(self):
-        return {
-            attr: getattr(self, attr)
-            for attr in dir(self)
-            if attr[:2] + attr[-2:] != "____" and not callable(getattr(self, attr))
-        }
 
 
 class Trainer:

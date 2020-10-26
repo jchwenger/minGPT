@@ -16,13 +16,13 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from mingpt.utils import Loggable
 from mingpt.utils import load_json
-from mingpt.utils import pretty_log_dict
 
 logger = logging.getLogger(__name__)
 
 
-class GPTConfig:
+class GPTConfig(Loggable):
     """ base GPT config, params common to all GPT versions """
 
     embd_pdrop = 0.1
@@ -53,16 +53,6 @@ class GPTConfig:
         d = load_json(fname)
         for k, v in d.items():
             setattr(self, k, v)
-
-    def log(self):
-        pretty_log_dict(
-            {
-                attr: getattr(self, attr)
-                for attr in dir(self)
-                if attr[:2] + attr[-2:] != "____" and not callable(getattr(self, attr))
-            },
-            title="Model config:",
-        )
 
 
 class GPT1Config(GPTConfig):
@@ -210,6 +200,17 @@ class GPT(nn.Module):
 
     def save(self, mod_name):
         self.config.save(mod_name)
+
+    def log(self):
+        logger.info("-" * 40)
+        msg = "Model's state_dict:"
+        logger.info(msg)
+        logger.info("-" * len(msg))
+        longest = len(max(self.state_dict().keys(), key=len))
+        for param_tensor in self.state_dict():
+            logger.info(
+                f"{param_tensor:{longest}} {list(self.state_dict()[param_tensor].size())}"
+            )
 
     def get_block_size(self):
         return self.block_size
