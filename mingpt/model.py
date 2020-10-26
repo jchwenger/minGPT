@@ -17,6 +17,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from mingpt.utils import load_json
+from mingpt.utils import pretty_log_dict
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +37,15 @@ class GPTConfig:
 
     def save(self, mod_name):
         with open(mod_name + ".json", "w") as o:
-            json.dump({
-                attr: getattr(self, attr)
-                for attr in dir(self)
-                if attr[:2] + attr[-2:] != "____" and not callable(getattr(self, attr))
-            }, o)
+            json.dump(
+                {
+                    attr: getattr(self, attr)
+                    for attr in dir(self)
+                    if attr[:2] + attr[-2:] != "____"
+                    and not callable(getattr(self, attr))
+                },
+                o,
+            )
 
     def load(self, mod_name):
         fname = mod_name + ".json"
@@ -48,6 +53,16 @@ class GPTConfig:
         d = load_json(fname)
         for k, v in d.items():
             setattr(self, k, v)
+
+    def __str__(self):
+        pretty_log_dict(
+            {
+                attr: getattr(self, attr)
+                for attr in dir(self)
+                if attr[:2] + attr[-2:] != "____" and not callable(getattr(self, attr))
+            },
+            title="Model config:",
+        )
 
 
 class GPT1Config(GPTConfig):
