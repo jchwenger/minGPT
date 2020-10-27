@@ -50,6 +50,7 @@ if "COLAB_TPU_ADDR" in os.environ:
     logger.info("-" * 40)
     import torch_xla
     import torch_xla.core.xla_model as xm
+    TPU_ENABLED = True
 
 class TrainerConfig(Loggable):
     # optimization parameters
