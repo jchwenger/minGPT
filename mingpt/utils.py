@@ -39,7 +39,7 @@ def check_file(fname):
     if os.path.isfile(fname):
         return True
     else:
-        logger.info(f"could not find: {fname}")
+        logger.warning(f"could not find: {fname}")
         return False
 
 
