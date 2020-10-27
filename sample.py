@@ -64,7 +64,8 @@ bytes_level = True if len(stoi) == 1 and "bytes" in stoi else False
 if not bytes_level:
     itos = {int(v): k for k, v in stoi.items()}
 
-logger.info(f"inferring on device: {device}",)
+logger.info(f"inferring on device: {device}")
+print()
 
 context = "o god, o god!" if args.context is None else args.context
 
