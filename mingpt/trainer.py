@@ -39,6 +39,7 @@ if "COLAB_TPU_ADDR" in os.environ:
     # https://stackoverflow.com/a/50255019
     import sys
     import subprocess
+    # https://stackoverflow.com/q/21953835/9638108
     sp = subprocess.run(
         [sys.executable, "-m", "pip", "install", tpu_client_version, wheel],
         check=True,
