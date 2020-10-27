@@ -179,7 +179,11 @@ class Trainer:
                     torch.nn.utils.clip_grad_norm_(
                         model.parameters(), config.grad_norm_clip
                     )
-                    self.optimizer.step()
+
+                    if TPU_ENABLED:
+                        xm.optimizer_step(optimizer, barrier=True)
+                    else:
+                        self.optimizer.step()
 
                     # decay the learning rate based on our progress
                     if config.lr_decay:
