@@ -1,4 +1,3 @@
-
 import os
 import json
 import torch
@@ -7,7 +6,6 @@ import argparse
 
 from mingpt.utils import sample
 from mingpt.utils import load_json
-from mingpt.utils import check_name
 
 from mingpt.model import GPT, GPTConfig
 
@@ -22,19 +20,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(
-    description="",
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    description="", formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 
 parser.add_argument(
-    "model",
-    metavar="PATH",
+    "model", metavar="PATH", type=str, help="model",
+)
+
+parser.add_argument(
+    "--model_dir",
     type=str,
-    help="model",
+    default="models",
+    help="""The model dir, if not 'models' (the default).""",
 )
 
 parser.add_argument(
-    "-c", "--context",
+    "-c",
+    "--context",
     default=None,
     type=str,
     help="Context to be given to the model for sampling (beginning).",
@@ -42,11 +44,11 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-args.model, model_name = check_name(args.model)
-
-mconf = GPTConfig(**load_json(f"{model_name}.json"))
+mconf = GPTConfig(**load_json(os.path.join(args.model_dir, args.model, "model.json")))
 model = GPT(mconf)
-model.load_state_dict(torch.load(args.model)["model_state_dict"])
+model.load_state_dict(
+    torch.load(os.path.join(args.model_dir, args.model, "model.pt"))["model_state_dict"]
+)
 
 mconf.log()
 # model.log()
@@ -57,12 +59,12 @@ if torch.cuda.is_available():
 
 model.to(device)
 
-stoi = load_json(model_name + ".vocab.json")
+stoi = load_json(os.path.join(args.model_dir, args.model, "model.vocab.json"))
 bytes_level = True if len(stoi) == 1 and "bytes" in stoi else False
 if not bytes_level:
     itos = {int(v): k for k, v in stoi.items()}
 
-logger.info(f"inferring on device: {device}", )
+logger.info(f"inferring on device: {device}",)
 
 context = "o god, o god!" if args.context is None else args.context
 

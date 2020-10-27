@@ -35,16 +35,6 @@ class Loggable:
         )
 
 
-def check_name(name):
-    if name.endswith(".pt"):
-        model_name = os.path.splitext(name)[0]
-        model_path = name
-    else:
-        model_name = name
-        model_path = model_name + ".pt"
-    return model_path, model_name
-
-
 def check_file(fname):
     if os.path.isfile(fname):
         return True
@@ -53,14 +43,14 @@ def check_file(fname):
         return False
 
 
-def check_model(name):
+def check_model(model_dir, name):
     found = True
     if not all(
         [
-            check_file(name + ".pt"),
-            check_file(name + ".vocab.json"),
-            check_file(name + ".json"),
-            check_file(name + ".train.json"),
+            check_file(os.path.join(model_dir, name, "model.pt")),
+            check_file(os.path.join(model_dir, name, "model.vocab.json")),
+            check_file(os.path.join(model_dir, name, "model.json")),
+            check_file(os.path.join(model_dir, name, "model.train.json")),
         ]
     ):
         found = False

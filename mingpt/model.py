@@ -37,8 +37,8 @@ class GPTConfig(Loggable):
 
     # https://stackoverflow.com/questions/61517/python-dictionary-from-an-objects-fields
     # https://stackoverflow.com/a/21945171
-    def save(self, mod_name):
-        with open(mod_name + ".json", "w") as o:
+    def save(self, model_dir, model_name):
+        with open(os.path.join(model_dir, model_name,  "model.json"), "w") as o:
             json.dump(
                 {
                     attr: getattr(self, attr)
@@ -49,8 +49,8 @@ class GPTConfig(Loggable):
                 o,
             )
 
-    def load(self, mod_name):
-        fname = mod_name + ".json"
+    def load(self, model_dir, model_name):
+        fname = os.path.join(model_dir, model_name, "model.json")
         assert os.path.isfile(fname), f"cannot load {fname}, exiting"
         d = load_json(fname)
         for k, v in d.items():
@@ -193,11 +193,11 @@ class GPT(nn.Module):
         self.apply(self._init_weights)
 
         logger.info(
-            f"number of parameters: {sum(p.numel() for p in self.parameters())}"
+            f"number of parameters: {sum(p.numel() for p in self.parameters()):,}"
         )
 
-    def save(self, mod_name):
-        self.config.save(mod_name)
+    def save(self, model_dir, model_name):
+        self.config.save(model_dir, model_name)
 
     def log(self):
         logger.info("-" * 40)

@@ -30,7 +30,6 @@ from char_dataset import CharDataset
 
 from mingpt.utils import set_seed
 from mingpt.utils import load_json
-from mingpt.utils import check_name
 from mingpt.utils import check_model
 
 # make deterministic
@@ -55,8 +54,22 @@ parser.add_argument(
 parser.add_argument(
     "--model",
     type=str,
-    default=None,
-    help="""the path to the model (the dir should include the model.vocab.json & model.json.""",
+    default="le_model",
+    help="""The path to the model (the dir should include the following files:
+        - 'model.pt';
+        - 'model.vocab.json';
+        - 'model.json';
+        - 'model.train.json'.
+    Defaults to "le_model". If a folder with that name exists, its contents
+    will be overwritten.
+    """,
+)
+
+parser.add_argument(
+    "--model_dir",
+    type=str,
+    default="models",
+    help="""The model dir, if not 'models' (the default).""",
 )
 
 parser.add_argument(
@@ -164,13 +177,15 @@ def split_dataset(dataset, divisor=100, seed=42):
     }
 
 
-def restore_model(model_name):
+def restore_model():
     mconf = GPTConfig()
-    mconf.load(model_name)
+    mconf.load(args.model_dir, args.model)
     model = GPT(mconf)
-    ckpt = torch.load(args.model)
+    ckpt = torch.load(os.path.join(args.model_dir, args.model, "model.pt"))
     model.load_state_dict(ckpt["model_state_dict"])
-    tconf = TrainerConfig(**load_json(f"{model_name }.train.json"))
+    tconf = TrainerConfig(
+        **load_json(os.path.join(args.model_dir, args.model, f"model.train.json"))
+    )
     if args.batch_size is not None:
         tconf.batch_size = args.batch_size
     mconf.log()
@@ -183,7 +198,7 @@ def restore_model(model_name):
     }
 
 
-def create_model(model_name, dataset):
+def create_model(dataset):
 
     # default to a tiny network if nothing specified
     if args.config == "min":
@@ -216,7 +231,7 @@ def create_model(model_name, dataset):
         batch_size=args.batch_size if args.batch_size is not None else 10,
         learning_rate=6e-4,
         lr_decay=True,
-        ckpt_path=model_name,
+        ckpt_path=os.path.join(args.model_dir, args.model),
         warmup_tokens=args.batch_size * 20,
         final_tokens=2 * len(dataset) * args.block_size,
         num_workers=4,
@@ -239,16 +254,16 @@ if __name__ == "__main__":
 
     if args.model is not None:
         # name given
-        args.model, model_name = check_name(args.model)
+
         # continue training
-        if check_model(model_name):
+        if check_model(args.model_dir, args.model):
             logger.info(f"found model: {args.model}, restoring.")
             trainer = Trainer(
                 **{
                     **split_dataset(
                         make_dataset(args.input), divisor=args.train_test_split
                     ),
-                    **restore_model(model_name),
+                    **restore_model(),
                 }
             )
         # new model with said name
@@ -261,18 +276,17 @@ if __name__ == "__main__":
             trainer = Trainer(
                 **{
                     **split_dataset(train_dataset, divisor=args.train_test_split),
-                    **create_model(args.model, train_dataset),
+                    **create_model(train_dataset),
                 }
             )
     # default new model
     else:
-        args.model = "le_model.pt"
         logging.info("no model specified, training 'le_model'")
         train_dataset = make_dataset(args.input)
         trainer = Trainer(
             **{
                 **split_dataset(train_dataset, divisor=args.train_test_split),
-                **create_model("le_model", train_dataset),
+                **create_model(train_dataset),
             }
         )
 

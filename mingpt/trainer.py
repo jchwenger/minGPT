@@ -3,6 +3,7 @@ Simple training loop; Boilerplate that could apply to any arbitrary neural netwo
 so nothing in this file really has anything to do with GPT specifically.
 """
 
+import os
 import math
 import logging
 
@@ -70,16 +71,25 @@ class Trainer:
 
     def save_checkpoint(self):
         # DataParallel wrappers keep raw model object in .module attribute
-        logger.info("saving %s", self.config.ckpt_path)
-        self.urmodel.save(self.config.ckpt_path)
-        save_json(self.dataset.stoi, self.config.ckpt_path + ".vocab.json")
-        save_json(self.config.as_dict(), self.config.ckpt_path + ".train.json")
+        logger.info(f"saving model {os.path.split(self.config.ckpt_path)[-1]}")
+
+        if not os.path.isdir(self.config.ckpt_path):
+            os.makedirs(self.config.ckpt_path)
+
+        self.urmodel.save(*os.path.split(self.config.ckpt_path))
+        save_json(
+            self.dataset.stoi, os.path.join(self.config.ckpt_path, "model.vocab.json")
+        )
+        save_json(
+            self.config.as_dict(),
+            os.path.join(self.config.ckpt_path, "model.train.json"),
+        )
         torch.save(
             {
                 "model_state_dict": self.urmodel.state_dict(),
                 "optimizer_state_dict": self.optimizer.state_dict(),
             },
-            self.config.ckpt_path + ".pt",
+            os.path.join(self.config.ckpt_path, "model.pt",),
         )
 
     def train(self, sample_every=0):
