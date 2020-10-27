@@ -48,6 +48,8 @@ if "COLAB_TPU_ADDR" in os.environ:
     for s in sp.stdout.strip().split(b"\n"):
         logger.info(s.decode())
     logger.info("-" * 40)
+    import torch_xla
+    import torch_xla.core.xla_model as xm
 
 class TrainerConfig(Loggable):
     # optimization parameters
