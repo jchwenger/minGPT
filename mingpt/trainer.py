@@ -76,6 +76,7 @@ class Trainer:
         self.device = "cpu"
         if TPU_ENABLED:
             self.device = xm.xla_device()
+            self.model = torch.nn.DataParallel(self.model).to(self.device)
         if torch.cuda.is_available():
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
