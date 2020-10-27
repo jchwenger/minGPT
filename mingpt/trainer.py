@@ -19,6 +19,12 @@ from mingpt.utils import sample
 from mingpt.utils import Loggable
 from mingpt.utils import save_json
 
+logging.basicConfig(
+    format="%(levelname)s: %(asctime)s %(name)s | %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
+)
+
 logger = logging.getLogger(__name__)
 
 TPU_ENABLED = False
@@ -33,11 +39,15 @@ if "COLAB_TPU_ADDR" in os.environ:
     # https://stackoverflow.com/a/50255019
     import sys
     import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", tpu_client_version, wheel])
-    # import xla
-    import torch_xla
-    import torch_xla.core.xla_model as xm
-    TPU_ENABLED = True
+    sp = subprocess.run(
+        [sys.executable, "-m", "pip", "install", tpu_client_version, wheel],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    for s in sp.stdout.strip().split(b"\n"):
+        logger.info(s.decode())
+    logger.info("-" * 40)
 
 class TrainerConfig(Loggable):
     # optimization parameters
@@ -77,6 +87,10 @@ class Trainer:
         if TPU_ENABLED:
             self.device = xm.xla_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
+            logger.info("-" * 40)
+            logger.info("xla info:")
+            logger.info(torch_xla._XLAC._xla_tensors_report(0, str(self.device)))
+            logger.info("-" * 40)
         if torch.cuda.is_available():
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
