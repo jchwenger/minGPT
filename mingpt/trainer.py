@@ -212,7 +212,7 @@ class Trainer:
 
                     # report progress
                     pbar.set_description(
-                        f"epoch {epoch+1} step {step}: train loss {loss.item():.5f}. lr {lr:e}"
+                        f"epoch: {epoch+1} | step: {step} | train loss: {loss.item():.5f} | lr: {lr:e}"
                     )
 
             if not is_train:
