@@ -21,6 +21,23 @@ from mingpt.utils import save_json
 
 logger = logging.getLogger(__name__)
 
+TPU_ENABLED = False
+# install tpu requirements
+if "COLAB_TPU_ADDR" in os.environ:
+    tpu_client_version = "cloud-tpu-client==0.10"
+    wheel = "https://storage.googleapis.com/tpu-pytorch/wheels/torch_xla-1.6-cp36-cp36m-linux_x86_64.whl"
+    logger.info("-" * 40)
+    logger.info(f"Found tpu: {os.environ['COLAB_TPU_ADDR']}. Attempting to install requirements:")
+    logger.info(f"{tpu_client_version} | {wheel}")
+    logger.info(f"(these can be changed in mingpt/trainer.py)")
+    # https://stackoverflow.com/a/50255019
+    import sys
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", tpu_client_version, wheel])
+    # import xla
+    import torch_xla
+    import torch_xla.core.xla_model as xm
+    TPU_ENABLED = True
 
 class TrainerConfig(Loggable):
     # optimization parameters
@@ -54,12 +71,10 @@ class Trainer:
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
         self.config = config
-        self.tpu = False
 
         # take over whatever gpus are on the system
         self.device = "cpu"
-        if "COLAB_TPU_ADDR" in os.environ:
-            self.setup_tpu()
+        if TPU_ENABLED:
             self.device = xm.xla_device()
         if torch.cuda.is_available():
             self.device = torch.cuda.current_device()
@@ -72,23 +87,6 @@ class Trainer:
             logger.info("loading optimizer dict")
             # [logger.info(f"{k}: {v}") for k, v in opt.items()]
             self.optimizer.load_state_dict(opt)
-
-    def setup_tpu(self):
-        # install tpu requirements
-        tpu_client_version = "cloud-tpu-client==0.10"
-        wheel = "https://storage.googleapis.com/tpu-pytorch/wheels/torch_xla-1.6-cp36-cp36m-linux_x86_64.whl"
-        logger.info(f"Found tpu: {os.environ['COLAB_TPU_ADDR']}. Attempting to install requirements:")
-        logger.info(f"{tpu_client_version} | {wheel}")
-        logger.info(f"(these can be changed in mingpt/trainer.py)")
-        # https://stackoverflow.com/a/50255019
-        import subprocess
-        import sys
-        subprocess.check_call([sys.executable, "-m", "pip", "install", tpu_client_version, wheel])
-        # import xla
-        import torch_xla
-        import torch_xla.core.xla_model as xm
-        self.tpu = True
-
 
     def save_checkpoint(self):
         # DataParallel wrappers keep raw model object in .module attribute
@@ -103,7 +101,7 @@ class Trainer:
             self.config.as_dict(),
             os.path.join(self.config.ckpt_path, "model.train.json"),
         )
-        save_fn = xm if self.tpu else torch
+        save_fn = xm if TPU_ENABLED else torch
         save_fn.save(
             {
                 "model_state_dict": self.urmodel.state_dict(),
