@@ -31,7 +31,7 @@ TPU_ENABLED = False
 # install tpu requirements
 if "COLAB_TPU_ADDR" in os.environ:
     # https://github.com/satyajitghana/ProjektDepth/blob/e501e53b8ee918dbdf9f48e42bb251bacd0f4801/vathos/trainer/tpu_trainer.py#L19
-    os.environ("COLAB_TPU_ADDR") = "1"
+    os.environ["XLA_USE_BF16"] = "1"
     tpu_client_version = "cloud-tpu-client==0.10"
     wheel = "https://storage.googleapis.com/tpu-pytorch/wheels/torch_xla-1.6-cp36-cp36m-linux_x86_64.whl"
     logger.info("-" * 40)
