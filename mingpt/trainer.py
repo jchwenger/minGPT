@@ -181,7 +181,7 @@ class Trainer:
                     )
 
                     if TPU_ENABLED:
-                        xm.optimizer_step(optimizer, barrier=True)
+                        xm.optimizer_step(self.optimizer, barrier=True)
                     else:
                         self.optimizer.step()
 
