@@ -73,7 +73,7 @@ class Trainer:
             # [logger.info(f"{k}: {v}") for k, v in opt.items()]
             self.optimizer.load_state_dict(opt)
 
-    def setup_tpu():
+    def setup_tpu(self):
         # install tpu requirements
         tpu_client_version = "cloud-tpu-client==0.10"
         wheel = "https://storage.googleapis.com/tpu-pytorch/wheels/torch_xla-1.6-cp36-cp36m-linux_x86_64.whl"
