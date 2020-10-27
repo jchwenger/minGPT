@@ -54,9 +54,13 @@ class Trainer:
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
         self.config = config
+        self.tpu = False
 
         # take over whatever gpus are on the system
         self.device = "cpu"
+        if "COLAB_TPU_ADDR" in os.environ:
+            self.setup_tpu()
+            self.device = xm.xla_device()
         if torch.cuda.is_available():
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
@@ -69,13 +73,28 @@ class Trainer:
             # [logger.info(f"{k}: {v}") for k, v in opt.items()]
             self.optimizer.load_state_dict(opt)
 
+    def setup_tpu():
+        # install tpu requirements
+        tpu_client_version = "cloud-tpu-client==0.10"
+        wheel = "https://storage.googleapis.com/tpu-pytorch/wheels/torch_xla-1.6-cp36-cp36m-linux_x86_64.whl"
+        logger.info(f"Found tpu: {os.environ['COLAB_TPU_ADDR']}. Attempting to install requirements:")
+        logger.info(f"{tpu_client_version} | {wheel}")
+        logger.info(f"(these can be changed in mingpt/trainer.py)")
+        # https://stackoverflow.com/a/50255019
+        import subprocess
+        import sys
+        subprocess.check_call([sys.executable, "-m", "pip", "install", tpu_client_version, wheel])
+        # import xla
+        import torch_xla
+        import torch_xla.core.xla_model as xm
+        self.tpu = True
+
+
     def save_checkpoint(self):
         # DataParallel wrappers keep raw model object in .module attribute
         logger.info(f"saving model {os.path.split(self.config.ckpt_path)[-1]}")
-
         if not os.path.isdir(self.config.ckpt_path):
             os.makedirs(self.config.ckpt_path)
-
         self.urmodel.save(*os.path.split(self.config.ckpt_path))
         save_json(
             self.dataset.stoi, os.path.join(self.config.ckpt_path, "model.vocab.json")
@@ -84,7 +103,8 @@ class Trainer:
             self.config.as_dict(),
             os.path.join(self.config.ckpt_path, "model.train.json"),
         )
-        torch.save(
+        save_fn = xm if self.tpu else torch
+        save_fn.save(
             {
                 "model_state_dict": self.urmodel.state_dict(),
                 "optimizer_state_dict": self.optimizer.state_dict(),
